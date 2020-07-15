@@ -298,7 +298,7 @@ returning *;
 
 // UpdateUser implementation
 func (repo *Repository) UpdateUser(ctx context.Context, usr *model.User) (err error) {
-	return repo.stmtCreateUser.GetContext(ctx, usr, usr)
+	return repo.stmtUpdateUser.GetContext(ctx, usr, usr)
 }
 
 const queryLoadUserByID = `
@@ -309,7 +309,7 @@ select * from users where id = :id;
 func (repo *Repository) LoadUserByID(ctx context.Context, id string) (usr *model.User, err error) {
 	usr = &model.User{ID: id}
 
-	err = repo.stmtCreateUser.GetContext(ctx, usr, usr)
+	err = repo.stmtLoadUserByID.GetContext(ctx, usr, usr)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +325,7 @@ select * from users where email = :email;
 func (repo *Repository) LoadUserByEmail(ctx context.Context, email string) (usr *model.User, err error) {
 	usr = &model.User{Email: email}
 
-	err = repo.stmtCreateUser.GetContext(ctx, usr, usr)
+	err = repo.stmtLoadUserByEmail.GetContext(ctx, usr, usr)
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +341,7 @@ select * from users where profile_name = :profile_name;
 func (repo *Repository) LoadUserByName(ctx context.Context, name string) (usr *model.User, err error) {
 	usr = &model.User{ProfileName: name}
 
-	err = repo.stmtCreateUser.GetContext(ctx, usr, usr)
+	err = repo.stmtLoadUserByName.GetContext(ctx, usr, usr)
 	if err != nil {
 		return nil, err
 	}
