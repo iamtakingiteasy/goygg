@@ -33,6 +33,12 @@ type serverMeta struct {
 	SignaturePublicKey string            `json:"signaturePublickey"`
 }
 
+func (h *Handler) makePassword(password string) string {
+	hash := sha256.Sum256([]byte(h.Config.Salt + password))
+
+	return hex.EncodeToString(hash[:])
+}
+
 func (h *Handler) handleServerMeta(writer http.ResponseWriter, request *http.Request) {
 	if request.Method != http.MethodGet {
 		srvErrHTTP(writer, http.StatusMethodNotAllowed)
@@ -88,13 +94,15 @@ func (h *Handler) handleAuthenticate(writer http.ResponseWriter, request *http.R
 		return
 	}
 
+	password := h.makePassword(input.Password)
+
 	user, err := h.Repository.LoadUserByEmail(request.Context(), input.Username)
 	if err != nil {
 		srvErrInvalidPassword(writer)
 		return
 	}
 
-	if user.Password != input.Password {
+	if user.Password != password {
 		srvErrInvalidPassword(writer)
 		return
 	}
@@ -302,7 +310,9 @@ func (h *Handler) handleSignout(writer http.ResponseWriter, request *http.Reques
 		return
 	}
 
-	if user.Password != input.Password {
+	password := h.makePassword(input.Password)
+
+	if user.Password != password {
 		srvErrInvalidPassword(writer)
 		return
 	}
@@ -700,9 +710,16 @@ func (h *Handler) handleRegister(writer http.ResponseWriter, request *http.Reque
 
 	values := request.MultipartForm.Value
 	email := firstString(values["email"])
-	password := firstString(values["password"])
 	nickname := firstString(values["nickname"])
 	skinmodel := firstString(values["model"])
+	rawpass := firstString(values["password"])
+
+	if rawpass == "" {
+		srvErr(writer, "IllegalArgumentException", "Invalid paramaters", "Password required")
+		return
+	}
+
+	password := h.makePassword(rawpass)
 
 	if len(nickname) > 16 {
 		srvErrError(writer, fmt.Errorf("name should be within 16 characters"))
@@ -715,11 +732,6 @@ func (h *Handler) handleRegister(writer http.ResponseWriter, request *http.Reque
 
 	if email == "" {
 		srvErr(writer, "IllegalArgumentException", "Invalid paramaters", "Email required")
-		return
-	}
-
-	if password == "" {
-		srvErr(writer, "IllegalArgumentException", "Invalid paramaters", "Password required")
 		return
 	}
 

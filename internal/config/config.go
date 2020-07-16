@@ -2,6 +2,7 @@
 package config
 
 import (
+	"crypto/rand"
 	"os"
 	"time"
 
@@ -16,6 +17,7 @@ type Config struct {
 	Meta        map[string]string `yaml:"meta"`
 	Expiry      time.Duration     `yaml:"expiry"`
 	TexturesDir string            `yaml:"texturesDir"`
+	Salt        string            `yaml:"salt"`
 	Database    struct {
 		Host     string `yaml:"host"`
 		Port     uint16 `yaml:"port"`
@@ -79,6 +81,21 @@ func NewConfig(file string) (conf *Config, err error) {
 
 	if conf.TexturesDir == "" {
 		conf.TexturesDir = "./textures"
+	}
+
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+	if conf.Salt == "" {
+		bs := make([]byte, 64)
+
+		_, err = rand.Read(bs)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, b := range bs {
+			conf.Salt += string([]rune{rune(charset[int(b)%len(charset)])})
+		}
 	}
 
 	bs, err := yaml.Marshal(conf)
